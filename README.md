@@ -83,3 +83,62 @@ El código sigue los principios SOLID:
 ## Contacto
 
 [Información de contacto o enlaces a perfiles relevantes]
+
+## Ejemplos de Uso
+
+A continuación, se presentan algunos ejemplos de cómo usar el script con diferentes opciones y los resultados esperados:
+
+### 1. Procesamiento básico de un archivo de audio
+
+Comando:
+```
+python background.py input.mp3
+```
+
+Resultado esperado:
+- Se creará un nuevo archivo llamado `input_ed.mp3`.
+- El audio en `input_ed.mp3` tendrá las siguientes características:
+  - Dividido en segmentos basados en silencios.
+  - Cada segmento se reproducirá a 0.8x de la velocidad original.
+  - Cada segmento se repetirá 9 veces con una pausa de 4 segundos entre repeticiones.
+  - Habrá 3 segundos de silencio al inicio y al final del archivo.
+
+### 2. Procesamiento con música de fondo
+
+Comando:
+```
+python background.py input.mp3 background_music.mp3
+```
+
+Resultado esperado:
+- Se creará un nuevo archivo llamado `input_ed.mp3`.
+- El audio en `input_ed.mp3` tendrá las mismas características que en el ejemplo 1, pero además:
+  - Se superpondrá la música de fondo de `background_music.mp3`.
+  - La música de fondo tendrá un volumen reducido (nivel 2 de 10).
+  - La música de fondo tendrá un fade-in de 2 segundos al inicio y un fade-out de 2 segundos al final.
+
+### 3. Procesamiento en modo de múltiples archivos
+
+Comando:
+```
+python background.py input.mp3 m
+```
+
+Resultado esperado:
+- Se crearán múltiples archivos: `input_ed_1.mp3`, `input_ed_2.mp3`, etc.
+- Cada archivo contendrá hasta 15 segmentos procesados (según el valor de `AFFIRMATIONS_PER_AUDIO_FILE`).
+- Cada archivo tendrá las mismas características de procesamiento que en el ejemplo 1.
+
+### 4. Procesamiento en modo de múltiples archivos con música de fondo
+
+Comando:
+```
+python background.py input.mp3 background_music.mp3 m
+```
+
+Resultado esperado:
+- Se crearán múltiples archivos: `input_ed_1.mp3`, `input_ed_2.mp3`, etc.
+- Cada archivo tendrá las mismas características que en el ejemplo 3, pero además:
+  - Incluirá la música de fondo de `background_music.mp3` con las características descritas en el ejemplo 2.
+
+Nota: En todos los casos, el script mostrará mensajes en la consola indicando el progreso y los nombres de los archivos creados.
