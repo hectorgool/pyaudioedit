@@ -1,0 +1,6 @@
+# Ignorar archivos .mp3
+*.mp3
+
+# Ignorar archivos .txt
+*.txt
+
