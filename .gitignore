@@ -1,3 +1,25 @@
+# Ignorar la carpeta __pycache__ y archivos .pyc
+__pycache__/
+*.pyc
+
+# Otros patrones comunes para proyectos Python
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.so
+
+# Archivos de IDE y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+
 # Ignorar archivos .mp3
 *.mp3
 
