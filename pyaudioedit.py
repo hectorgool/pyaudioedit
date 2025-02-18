@@ -17,19 +17,22 @@ def repeat_segment(audio: AudioSegment, num_repetitions: int, pause_duration: in
     return sum((audio + pause for _ in range(num_repetitions)), AudioSegment.empty())
 
 def overlay_background_music(audio: AudioSegment, bg_music: AudioSegment, volume: int, fade_in: int, fade_out: int) -> AudioSegment:
-    volume_db = -30 + (volume * 3)
+    gc.collect()  # Liberar memoria antes de procesar
+    
+    volume_db = -60 + (volume * 6)
     bg_music = bg_music + volume_db
-    bg_music_loop = bg_music * (len(audio) // len(bg_music) + 1)
-    bg_music_loop = bg_music_loop[:len(audio)].fade_in(fade_in).fade_out(fade_out)
+    bg_music_loop = bg_music[:len(audio)].fade_in(fade_in).fade_out(fade_out)
     return audio.overlay(bg_music_loop)
 
 def load_audio(file_path: str) -> AudioSegment:
+    gc.collect()  # Liberar memoria antes de cargar un archivo
     return AudioSegment.from_file(file_path, format="mp3")
 
 def save_audio(audio: AudioSegment, file_path: str):
     audio.export(file_path, format="mp3")
 
 def edit_audio(audio: AudioSegment, silence_thresh: int, min_silence_len: int, speed: float, num_repetitions: int, pause_duration: int) -> AudioSegment:
+    gc.collect()  # Liberar memoria antes de procesar el audio
     silences = detect_silences(audio, silence_thresh, min_silence_len)
     edited_audio = AudioSegment.empty()
     last_end = 0
@@ -41,13 +44,13 @@ def edit_audio(audio: AudioSegment, silence_thresh: int, min_silence_len: int, s
         edited_audio += processed_segment
         last_end = end
     
-    # Process the last segment
     if last_end < len(audio):
         segment = audio[last_end:]
         processed_segment = adjust_speed(segment, speed)
         processed_segment = repeat_segment(processed_segment, num_repetitions, pause_duration)
         edited_audio += processed_segment
     
+    gc.collect()
     return edited_audio
 
 def process_audio(input_file: str, create_mp3_files: bool, background_music: Optional[str], 
@@ -56,65 +59,20 @@ def process_audio(input_file: str, create_mp3_files: bool, background_music: Opt
                   bg_fade_in: int, bg_fade_out: int, bg_volume: int, alias_edit_suffix: str):
     audio = load_audio(input_file)
     
+    bg_music = None
     if background_music:
         bg_music = load_audio(background_music)
     
     start_silence_seg = AudioSegment.silent(duration=start_silence)
     end_silence_seg = AudioSegment.silent(duration=end_silence)
 
-    if create_mp3_files:
-        _process_multiple_files(audio, input_file, silence_thresh, min_silence_len, speed, num_repetitions, 
-                                pause_duration, affirmations_per_file, start_silence_seg, end_silence_seg, 
-                                bg_music if background_music else None, bg_fade_in, bg_fade_out, bg_volume, alias_edit_suffix)
-    else:
-        _process_single_file(audio, input_file, silence_thresh, min_silence_len, speed, num_repetitions, 
-                             pause_duration, start_silence_seg, end_silence_seg, 
-                             bg_music if background_music else None, bg_fade_in, bg_fade_out, bg_volume, alias_edit_suffix)
-
-def _process_multiple_files(audio: AudioSegment, input_file: str, silence_thresh: int, min_silence_len: int, 
-                            speed: float, num_repetitions: int, pause_duration: int, affirmations_per_file: int, 
-                            start_silence: AudioSegment, end_silence: AudioSegment, bg_music: Optional[AudioSegment], 
-                            bg_fade_in: int, bg_fade_out: int, bg_volume: int, alias_edit_suffix: str):
-    silences = detect_silences(audio, silence_thresh, min_silence_len)
-    total_segments = len(silences) + 1
-    last_end = 0
-    
-    for i in range(0, total_segments, affirmations_per_file):
-        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-            sub_audio = start_silence
-            
-            for j in range(i, min(i + affirmations_per_file, total_segments)):
-                if j < len(silences):
-                    start, end = silences[j]
-                    segment = audio[last_end:start]
-                else:
-                    segment = audio[last_end:]
-                
-                processed_segment = edit_audio(segment, silence_thresh, min_silence_len, speed, num_repetitions, pause_duration)
-                sub_audio += processed_segment
-                last_end = end
-            
-            sub_audio += end_silence
-            
-            if bg_music:
-                sub_audio = overlay_background_music(sub_audio, bg_music, bg_volume, bg_fade_in, bg_fade_out)
-            
-            save_audio(sub_audio, temp_file.name)
-        
-        file_name, file_extension = os.path.splitext(input_file)
-        edited_file_name = f"{file_name}_{alias_edit_suffix}_{(i // affirmations_per_file) + 1}{file_extension}"
-        os.rename(temp_file.name, edited_file_name)
-        print(f"Archivo editado guardado como: {edited_file_name}")
-        
-        del sub_audio
-        gc.collect()
-
-def _process_single_file(audio: AudioSegment, input_file: str, silence_thresh: int, min_silence_len: int, 
-                         speed: float, num_repetitions: int, pause_duration: int, start_silence: AudioSegment, 
-                         end_silence: AudioSegment, bg_music: Optional[AudioSegment], bg_fade_in: int, 
-                         bg_fade_out: int, bg_volume: int, alias_edit_suffix: str):
     with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-        edited_audio = start_silence + edit_audio(audio, silence_thresh, min_silence_len, speed, num_repetitions, pause_duration) + end_silence
+        edited_audio = start_silence_seg
+        for i in range(0, len(audio), 60000):  # Procesar en fragmentos de 60 segundos
+            segment = audio[i:i+60000]
+            processed_segment = edit_audio(segment, silence_thresh, min_silence_len, speed, num_repetitions, pause_duration)
+            edited_audio += processed_segment
+        edited_audio += end_silence_seg
         
         if bg_music:
             edited_audio = overlay_background_music(edited_audio, bg_music, bg_volume, bg_fade_in, bg_fade_out)
@@ -125,3 +83,6 @@ def _process_single_file(audio: AudioSegment, input_file: str, silence_thresh: i
     edited_file_name = f"{file_name}_{alias_edit_suffix}{file_extension}"
     os.rename(temp_file.name, edited_file_name)
     print(f"Archivo editado guardado como: {edited_file_name}")
+    
+    del edited_audio, audio, bg_music
+    gc.collect()

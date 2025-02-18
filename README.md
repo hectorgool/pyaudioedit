@@ -142,3 +142,18 @@ Resultado esperado:
   - Incluirá la música de fondo de `background_music.mp3` con las características descritas en el ejemplo 2.
 
 Nota: En todos los casos, el script mostrará mensajes en la consola indicando el progreso y los nombres de los archivos creados.
+
+
+Puedes usar el siguiente comando en Bash para concatenar el archivo `a.mp3` 9 veces y generar un archivo llamado `b.mp3` con el resultado:
+
+```bash
+for i in {1..9}; do cat a.mp3 >> b.mp3; done
+```
+
+Este script utiliza un bucle `for` para ejecutar el comando `cat` 9 veces, concatenando el contenido de `a.mp3` en el archivo `b.mp3`. Si `b.mp3` ya existe, el comando lo agregará al final, así que asegúrate de eliminarlo primero si quieres comenzar desde cero:
+
+```bash
+rm -f b.mp3 && for i in {1..9}; do cat a.mp3 >> b.mp3; done
+```
+
+Este comando eliminará `b.mp3` si existe, y luego lo creará nuevamente concatenando `a.mp3` 9 veces.
